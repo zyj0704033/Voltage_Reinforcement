@@ -17,7 +17,7 @@ class Task:
     EXIT_SEND = [EXIT, 0]
     RESET_SEND = [RESET, 0]
 
-    def __init__(self, name='graduate', envs_num=2, reset_flag = True, episode_length = 1440):
+    def __init__(self, name='graduate', envs_num=17, reset_flag = True, episode_length = 30):
         self.name = name
         self.envs_num = envs_num
         self.start_index = np.arange(envs_num) * 1440
@@ -49,25 +49,28 @@ class Task:
             message['step_index']: ndarray envs_num * 1
             message['reward']: ndarray envs_num * 1
         '''
-        print("envs_num: %d" %self.envs_num)
+        # print("envs_num: %d" %self.envs_num)
         for i, pipe in enumerate(self.pipes):
             sp, rp, sp2, rp2 = pipe
             sp.send([self.total_step, action[i,:]])
         PQV = []
         step_index = []
         reward = []
+        dones = []
         for pipe in self.pipes:
             sp, rp, sp2, rp2 = pipe
             message_recv = rp2.recv()
             PQV.append(message_recv['PQV'])
             step_index.append(message_recv['step_index'])
             reward.append(message_recv['reward'])
+            dones.append(message_recv['done'])
         self.total_step += 1
         self.all_step = self.total_step * self.envs_num
         message = {
             'PQV': np.array(PQV),
             'step_index': np.array(step_index),
-            'reward': np.array(reward)
+            'reward': np.array(reward),
+            'dones': np.array(dones)
         }
         return message['step_index'], message['PQV'], message['reward'], message['dones']
 
@@ -91,7 +94,7 @@ class Task:
     def eng_step(self, pipe, start_index=1, episode_length=1440):
         eng = matlab.engine.start_matlab()  #start matlab in python
         print("start matlab in subprocess!")
-        eng.addpath("/home/t630/Voltage_Control/test3", nargout=0)  #add voltage control path to the matlab workspace
+        eng.addpath("/home/t630/Voltage_Reinforcement/test3", nargout=0)  #add voltage control path to the matlab workspace
         eng.start_matpower()  #start up matpower
         eng.load_data(nargout = 0)
         eng.env_init(nargout = 0)
@@ -106,16 +109,17 @@ class Task:
                 step_index = int(step_index)
                 step_index += start_index
                 step_index = step_index % self.MAX_STEP
+                step_index += 1
                 if step_index == start_index and self.reset_flag:
                     eng.envreset(nargout = 0)
-                step_index += 1
                 eng.workspace['action_flag'] = list(action)
                 eng.workspace['i'] = step_index
                 eng.action(nargout = 0)
                 eng.save_result(nargout = 0)
                 message_send = {'step_index': np.array(eng.workspace['i']),
                                 'PQV': np.array(eng.workspace['PQV']),
-                                'reward': np.array(eng.workspace['reward'])
+                                'reward': np.array(eng.workspace['reward']),
+                                'done': (step_index % self.episode_length) == 0
                 }
                 sp2.send(message_send)
 
@@ -130,10 +134,11 @@ if __name__ == '__main__':
     start = time.time()
     step_num = 10
     for i in range(step_num):
-        stepi, states, reward = task.step(np.random.binomial(1, 0.7, size=(task.envs_num,6)))
+        stepi, states, rewards, dones = task.step(np.random.binomial(1, 1, size=(task.envs_num,6)))
         print(stepi)
         print(states.shape)
-        print(reward)
+        print(rewards)
+        print(dones)
     task.close()
     end = time.time()
     print("TOTAL USE TIME %s" %(end-start))

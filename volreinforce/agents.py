@@ -18,6 +18,7 @@ class A2CAgent(object):
         self.envs_num =  self.env.envs_num
         self.optimizer = torch.optim.RMSprop(self.network.parameters(), lr=1e-4, alpha=0.99, eps=1e-5)
         self.total_step = 0
+        self.env_step = 0
         self.rollout = 10
         _, self.states, _, _ = self.env.step(np.ones((self.env.envs_num, 6)))
         self.state_norm = Normlizer()
@@ -26,14 +27,15 @@ class A2CAgent(object):
         self.value_loss_weight = 1
         self.gradient_clip = 5
         self.episode_rewards = []
-        self.online_rewards = np.zeros(config.num_workers)
+        self.online_rewards = np.zeros(self.envs_num)
+
 
     def step(self):
         storage = Storage(self.rollout)
         state = self.states
         for _ in range(self.rollout):
             prediction = self.network(self.state_norm.meanstdnorm(state, self.envs_num))
-            stepi, next_states, rewards = self.env.step(to_np(prediction['a']).astype(np.int64))
+            stepi, next_states, rewards, dones = self.env.step(to_np(prediction['a']).astype(np.int64))
             self.online_rewards += rewards
             for i, done in enumerate(dones):
                 if done:
@@ -56,10 +58,10 @@ class A2CAgent(object):
             returns = storage.r[i] + self.discount * storage.v[i+1]
             td_error = storage.r[i] + self.discount * storage.v[i+1] - storage.v[i]
             advantages = advantages * self.gae_lamda + td_error
-            storage.adv = advantages.detach()
-            storage.ret = returns.detach()
+            storage.adv[i] = advantages.detach()
+            storage.ret[i] = returns.detach()
 
-        log_prob, value, returns, advantages, entropy = storage.cat(['log_pi_a', 'v', 'ret', 'adv', 'ent'])
+        log_prob, value, returns, advantages = storage.cat(['log_pi_a', 'v', 'ret', 'adv'])
         policy_loss = -(log_prob * advantages).mean()
         value_loss = 0.5 * (returns - value).pow(2).mean()
         self.optimizer.zero_grad()
@@ -68,6 +70,7 @@ class A2CAgent(object):
         self.optimizer.step()
 
         self.total_step = self.env.all_step
+        self.env_step = self.env.total_step
 
 
     def close(self):

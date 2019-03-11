@@ -68,7 +68,7 @@ class ActorCriticNet(nn.Module):
 
         return {
             'a': action,
-            'log_prob': log_prob,
+            'log_pi_a': log_prob,
             'ent': entropy,
             'v': v
         }

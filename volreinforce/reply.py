@@ -1,6 +1,9 @@
 # -*- coding:utf-8 -*-
 # author: zhangyujing@tsinghua
 # email: zyj0704033@163.com
+import torch
+import numpy as np
+
 
 class Storage:
     def __init__(self, size, keys=None):

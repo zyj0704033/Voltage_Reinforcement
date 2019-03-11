@@ -1,0 +1,11 @@
+V4(:,i) = result.bus(:,8);
+QOPV(i,:) = result.bus(:,4)';
+POPV(i,:) = result.bus(:,3)';
+VOPV(i,:) = result.bus(:,8)';
+PQV = result.bus(useful_nodes,[3 4 8]);
+reward = 0;
+[ar,vr] = cal_return(final_action, PQV);
+arsave = arsave + ar;
+vrsave = vrsave + vr;
+allr = 0.6 * arsave + vrsave;
+reward = allr;

@@ -7,14 +7,15 @@ import torch
 
 
 class Normlizer(object):
-    def __init__(self, file_path='../test3/', filename='PVQ'):
+    def __init__(self, device, file_path='../test3/', filename='PVQ'):
         super(Normlizer, self).__init__()
         self.dmean = scipy.io.loadmat(file_path+'meanstate.mat')['meanstate']
         self.dstd = scipy.io.loadmat(file_path+'stdstate.mat')['stdstate']
+        self.device = device
 
     def meanstdnorm(self, state, batch_size):
         normtensor = torch.tensor(((state - self.dmean) / (self.dstd)).T, dtype=torch.float)
-        return normtensor.view(batch_size, 1, 3, -1)
+        return normtensor.view(batch_size, 1, 3, -1).to(self.device)
 
 def to_np(t):
     return t.cpu().detach().numpy()

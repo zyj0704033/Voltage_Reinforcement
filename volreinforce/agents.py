@@ -11,9 +11,10 @@ from utils import *
 
 class A2CAgent(object):
     """docstring for A2CAgent."""
-    def __init__(self):
+    def __init__(self, usegpu=True):
         super(A2CAgent, self).__init__()
-        self.network = ActorCriticNet()
+        self.device = torch.device("cuda:0" if (torch.cuda.is_available() and usegpu) else "cpu")
+        self.network = ActorCriticNet().to(self.device)
         self.env = Task(envs_num=8)
         self.envs_num =  self.env.envs_num
         self.optimizer = torch.optim.RMSprop(self.network.parameters(), lr=1e-4, alpha=0.99, eps=1e-5)
@@ -21,13 +22,14 @@ class A2CAgent(object):
         self.env_step = 0
         self.rollout = 10
         _, self.states, _, _ = self.env.step(np.ones((self.env.envs_num, 6)))
-        self.state_norm = Normlizer()
+        self.state_norm = Normlizer(self.device)
         self.discount = 0.9
         self.gae_lamda = 0.99
         self.value_loss_weight = 1
         self.gradient_clip = 5
         self.episode_rewards = []
         self.online_rewards = np.zeros(self.envs_num)
+
 
 
     def step(self):
@@ -42,8 +44,8 @@ class A2CAgent(object):
                     self.episode_rewards.append(self.online_rewards[i])
                     self.online_rewards[i] = 0
             storage.add(prediction)
-            storage.add({'r': tensor(rewards).unsqueeze(-1),
-                         'm': tensor(1 - dones).unsqueeze(-1)})
+            storage.add({'r': tensor(rewards).unsqueeze(-1).to(self.device),
+                         'm': tensor(1 - dones).unsqueeze(-1).to(self.device)})
             states = next_states
 
         self.states = states
@@ -52,7 +54,7 @@ class A2CAgent(object):
         storage.placeholder()
 
 
-        advantages = tensor(np.zeros((self.envs_num, 1)))
+        advantages = tensor(np.zeros((self.envs_num, 1))).to(self.device)
         returns = prediction['v'].detach()
         for i in reversed(range(self.rollout)):
             returns = storage.r[i] + self.discount * storage.v[i+1]

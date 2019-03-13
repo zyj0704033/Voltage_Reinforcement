@@ -17,7 +17,7 @@ class Task:
     EXIT_SEND = [EXIT, 0]
     RESET_SEND = [RESET, 0]
 
-    def __init__(self, name='graduate', envs_num=17, reset_flag = True, episode_length = 30):
+    def __init__(self, name='graduate', envs_num=17, reset_flag = False, episode_length = 30):
         self.name = name
         self.envs_num = envs_num
         self.start_index = np.arange(envs_num) * 1440

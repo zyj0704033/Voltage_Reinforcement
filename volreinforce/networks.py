@@ -72,3 +72,39 @@ class ActorCriticNet(nn.Module):
             'ent': entropy,
             'v': v
         }
+
+
+class ActorCriticNet2Body(nn.Module):
+    def __init__(self):
+        super(ActorCriticNet, self).__init__()
+        self.ConvBody1 = ConvBody()
+        self.ConvBody2 = ConvBody()
+        self.actornet = nn.Linear(200, 6)
+        self.valuenet = nn.Linear(200, 1)
+        self.sigmoid = nn.Sigmoid()
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+
+    def forward(self, x, action=None):
+        y = self.ConvBody(x)
+        a = self.sigmoid(self.actornet(y))
+        y2 = self.ConvBody(x)
+        v = self.valuenet(y2)
+        action_dist = torch.distributions.bernoulli.Bernoulli(probs=a)
+        if action is None:
+            action = action_dist.sample()
+        log_prob = torch.sum(action_dist.log_prob(action), 1)
+        entropy = torch.sum(action_dist.entropy(), 1)
+
+        return {
+            'a': action,
+            'log_pi_a': log_prob,
+            'ent': entropy,
+            'v': v
+        }

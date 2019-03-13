@@ -15,9 +15,9 @@ class A2CAgent(object):
         super(A2CAgent, self).__init__()
         self.device = torch.device("cuda:0" if (torch.cuda.is_available() and usegpu) else "cpu")
         self.network = ActorCriticNet().to(self.device)
-        self.env = Task(envs_num=8)
+        self.env = Task(envs_num=17)
         self.envs_num =  self.env.envs_num
-        self.optimizer = torch.optim.RMSprop(self.network.parameters(), lr=1e-4, alpha=0.99, eps=1e-5)
+        self.optimizer = torch.optim.RMSprop(self.network.parameters(), lr=3e-5, alpha=0.99, eps=1e-5)
         self.total_step = 0
         self.env_step = 0
         self.rollout = 10
@@ -25,7 +25,7 @@ class A2CAgent(object):
         self.state_norm = Normlizer(self.device)
         self.discount = 0.9
         self.gae_lamda = 0.99
-        self.value_loss_weight = 1
+        self.value_loss_weight = 1e-1
         self.gradient_clip = 5
         self.episode_rewards = []
         self.online_rewards = np.zeros(self.envs_num)
@@ -39,10 +39,11 @@ class A2CAgent(object):
             prediction = self.network(self.state_norm.meanstdnorm(state, self.envs_num))
             stepi, next_states, rewards, dones = self.env.step(to_np(prediction['a']).astype(np.int64))
             self.online_rewards += rewards
-            for i, done in enumerate(dones):
-                if done:
-                    self.episode_rewards.append(self.online_rewards[i])
-                    self.online_rewards[i] = 0
+            # print(self.online_rewards)
+            # for i, done in enumerate(dones):
+            #     if done:
+            #         self.episode_rewards.append(self.online_rewards[i])
+            #         self.online_rewards[i] = 0
             storage.add(prediction)
             storage.add({'r': tensor(rewards).unsqueeze(-1).to(self.device),
                          'm': tensor(1 - dones).unsqueeze(-1).to(self.device)})
@@ -87,7 +88,7 @@ class A2CAgent(object):
 
 
 if __name__ == '__main__':
-    agent = A2CAgent(envs_num=8)
+    agent = A2CAgent(envs_num=17)
 
 # class PPOAgent(object):
 #     """docstring for A2CAgent."""

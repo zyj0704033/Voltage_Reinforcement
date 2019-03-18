@@ -24,20 +24,35 @@
 % close(fig)
 
 
-close all
-fig = figure(2)
-plot(allrsave(:,1))
-hold on
-plot(allrsave(:,2))
-hold on
-plot(allrsave(:,3))
-ylim([-3000 0])
-saveas(fig, 'pic/reward0.4.png')
+% close all
+% fig = figure(2)
+% plot(allrsave(:,1))
+% hold on
+% plot(allrsave(:,2))
+% hold on
+% plot(allrsave(:,3))
+% ylim([-3000 0])
+% saveas(fig, 'pic/reward0.4.png')
 
-% fig = figure(1)
-% plot(VOPV(:,13))
-% saveas(fig, 'afigure.png')
-% close(fig)
+fig = figure(1)
+subplot(3,1,1)
+plot(V1(7,:))
+hold on
+plot(V0(7,:))
+ylabel('14节点电压')
+legend('优化后','优化前')
+subplot(3,1,2)
+plot(V1(13,:))
+hold on
+plot(V0(13,:))
+ylabel('20节点电压')
+subplot(3,1,3)
+plot(V1(22,:))
+hold on
+plot(V0(22,:))
+ylabel('27节点电压')
+saveas(fig, 'afigure.png')
+close(fig)
 
 % meanstate = zeros(length(useful_nodes),3);
 % meanstate(:,1) = mean(POPV(:,useful_nodes));

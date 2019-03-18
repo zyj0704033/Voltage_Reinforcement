@@ -76,6 +76,9 @@ class A2CAgent(object):
         self.env_step = self.env.total_step
 
 
+    def savemodel(self, filename):
+        torch.save(self.network.state_dict(), filename)
+
     def close(self):
         self.env.close()
 

@@ -1,6 +1,6 @@
 % add control to chaoliu cal
 start_matpower;
-isSample = 0
+isSample = 1
 
 %setup V_ref
 mpc = loadcase('envcase');
@@ -18,7 +18,7 @@ dV = [];
 dQ_list = [];
 dQpv_list = [];
 
-PVnode = [46, 53, 66, 59, 62, 42] - 40;
+PVnode = [53, 46, 66, 59, 62, 42] - 40;
 PVnum = 6;
 
 dQsum = zeros(1,7);
@@ -82,7 +82,7 @@ for i=1:N
 %下垂控制
 % add for action isSample
         if isSample == 1
-          action_flag = binornd(1, 0.4, 1, PVnum);
+          action_flag = binornd(1, 0.3, 1, PVnum);
         else
           action_flag = ones(1, PVnum);
         end
@@ -98,20 +98,21 @@ for i=1:N
                     if dV > 0.01
                         final_action(k) = 1;
                         %dQ = (dV-0.01) * -5 / 0.05;
-                        dQ = -0.05;
+                        dQ = -0.1;
                     else
                         final_action(k) = 1;
                         %dQ = (dV+0.01) * -5 / 0.05;
-                        dQ = 0.05;
+                        dQ = 0.1;
                     end
                 end
                 dQsave(i, k) = dQ;
                 mpc.bus(pvn, 4) = mpc.bus(pvn, 4) + dQ;
+                %result = runpf(mpc, opt);
             end
             % result = runpf(mpc, opt);
         end
     end
-    V0(:,i) = result.bus(:,8);
+    V1(:,i) = result.bus(:,8);
     QOPV(i,:) = result.bus(:,4)';
     POPV(i,:) = result.bus(:,3)';
     VOPV(i,:) = result.bus(:,8)';

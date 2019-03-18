@@ -1,2 +1,5 @@
 neural_power_flow/
 RL/
+*.pyc
+result/
+.ipynb_checkpoints/

@@ -52,7 +52,7 @@ allrsave = [];
 
 
 % judge for sc control
-scopt = 1;
+scopt = 2;
 denoise = 1;
 noisecount = 3;
 
@@ -61,13 +61,14 @@ Pd1 = (Pd1 * 2 - 2/22) * 2;
 Qd1 = (Qd1 * 2 - 1/22) * 2;
 scnode = [8 17 32];
 sc_idx = [5 11 22];
-sc = [2 1 1];
+sc = [0 0 0];
 maxQ = 0.15;
 noPVQ = 1
 OLTC = 1.03;
 sclist = [];
 bestsc = sc;
 icount = 0;
+sctime = [1:10] * 288;
 
 
 for i=1:N
@@ -140,7 +141,7 @@ for i=1:N
     end
 
     % select bestsc
-    if rem(i,10)==1 & scopt==1
+    if ~isempty(find(sctime==i)) & scopt==2
       minloss = 10000;
       %bestsc = [0 0 0];
       % select bestsc
@@ -159,26 +160,8 @@ for i=1:N
         end
       end
 
-      % denoise
-      if denoise == 0 | i < 10
-        sc = bestsc;
-      else
-        if sum(bestsc ~= sc) > 0
-          icount = icount + 1;
-        else
-          icount = 0;
-        end
-
-        if icount > noisecount
-          i
-          icount
-          sc = bestsc;
-          icount = 0;
-        end
-      end
-
     end %end for bestsc
-
+    sc = bestsc;
     sclist(i,:) = sc;
     mpc.bus(scnode, 4) = Qd1(i, sc_idx) - sc;
     result = runpf(mpc,opt);
